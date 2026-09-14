@@ -10,6 +10,7 @@ const suppliersRoutes = require('./routes/suppliers');
 const budgetRoutes = require('./routes/budget');
 const storageRoutes = require('./routes/storage');
 const productsRoutes = require('./routes/products');
+const agentRoutes = require('./routes/agent');
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,7 @@ app.use('/api/suppliers', suppliersRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/storage', storageRoutes);
 app.use('/api/products', productsRoutes);
+app.use('/api/agent', agentRoutes);
 
 const PORT = process.env.PORT || 4000;
 

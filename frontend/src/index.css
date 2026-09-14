@@ -1227,3 +1227,533 @@ a {
     font-size: 36px;
   }
 }
+
+/* =========================================================
+   SCENARIO 1 — AI PURCHASING AGENT
+   ========================================================= */
+
+.scenario-page {
+  min-height: 100vh;
+  background: #f7f8fa;
+  color: #111827;
+  padding: 32px;
+}
+
+.scenario-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.scenario-header {
+  margin-bottom: 28px;
+}
+
+.scenario-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.scenario-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+.scenario-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 32px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+
+.scenario-subtitle {
+  margin: 10px 0 0;
+  max-width: 720px;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.scenario-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.scenario-back-link:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+/* Main grid */
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.95fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.scenario-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.04);
+}
+
+.scenario-card-header {
+  padding: 20px 22px;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.scenario-card-header h2 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.scenario-card-header p {
+  margin: 5px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.scenario-card-body {
+  padding: 22px;
+}
+
+/* Form */
+
+.scenario-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.scenario-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scenario-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.scenario-field select,
+.scenario-field input {
+  width: 100%;
+  height: 46px;
+  padding: 0 13px;
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
+  outline: none;
+  background: white;
+  color: #111827;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.scenario-field select:focus,
+.scenario-field input:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.08);
+}
+
+.scenario-product-preview {
+  padding: 16px;
+  border: 1px solid #e8eaee;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.scenario-product-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.scenario-product-sku {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.scenario-product-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.scenario-product-detail {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: white;
+  border: 1px solid #eceef1;
+}
+
+.scenario-product-detail span {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 3px;
+}
+
+.scenario-product-detail strong {
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Run button */
+
+.scenario-run-button {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: #111827;
+  color: white;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.scenario-run-button:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
+}
+
+.scenario-run-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Agent pipeline */
+
+.scenario-pipeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.scenario-pipeline-step {
+  position: relative;
+  padding: 15px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  text-align: center;
+}
+
+.scenario-pipeline-step.active {
+  border-color: #c7d2fe;
+  background: #f5f7ff;
+}
+
+.scenario-pipeline-step.complete {
+  border-color: #d1fae5;
+  background: #f0fdf4;
+}
+
+.scenario-pipeline-icon {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.scenario-pipeline-step.active .scenario-pipeline-icon {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.scenario-pipeline-step.complete .scenario-pipeline-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.scenario-pipeline-step strong {
+  display: block;
+  font-size: 12px;
+  color: #374151;
+}
+
+.scenario-pipeline-step span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* Evidence */
+
+.scenario-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 25px 0 12px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.scenario-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.scenario-evidence-item {
+  padding: 14px;
+  border: 1px solid #e7e9ed;
+  border-radius: 11px;
+  background: #fafafa;
+}
+
+.scenario-evidence-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.scenario-evidence-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Decision */
+
+.scenario-decision-card {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.scenario-decision-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.scenario-decision-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scenario-confidence {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.scenario-confidence strong {
+  color: #111827;
+}
+
+.scenario-decision-quantity {
+  margin-top: 15px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.scenario-decision-quantity span {
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.scenario-reasons {
+  margin: 15px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.scenario-reasons li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Approval */
+
+.scenario-approval-card {
+  margin-top: 15px;
+  padding: 18px;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  background: #fffbeb;
+}
+
+.scenario-approval-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.scenario-approval-card p {
+  margin: 8px 0 0;
+  color: #92400e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Status */
+
+.scenario-status-card {
+  margin-top: 15px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: white;
+}
+
+.scenario-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.scenario-status-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.scenario-status-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.scenario-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+/* Empty / loading */
+
+.scenario-empty {
+  padding: 35px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.scenario-error {
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+/* Responsive */
+
+@media (max-width: 1000px) {
+  .scenario-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .scenario-page {
+    padding: 20px 15px;
+  }
+
+  .scenario-header-top {
+    flex-direction: column;
+  }
+
+  .scenario-title {
+    font-size: 26px;
+  }
+
+  .scenario-pipeline {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scenario-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 450px) {
+  .scenario-product-details {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-pipeline {
+    grid-template-columns: 1fr;
+  }
+}
