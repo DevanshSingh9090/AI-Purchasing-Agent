@@ -15,6 +15,17 @@ router.get('/:productId', async (req, res) => {
   }
 });
 
+// GET /api/pos/po/:id -> fetch a single PO by its own _id
+router.get('/po/:id', async (req, res) => {
+  try {
+    const po = await PurchaseOrder.findById(req.params.id);
+    if (!po) return res.status(404).json({ error: 'PO not found' });
+    res.json(po);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/pos  -> create a new PO (used by the "act" step later)
 router.post('/', async (req, res) => {
   try {

@@ -101,4 +101,112 @@ function applyGuardrails(decision, evidence) {
   return decision;
 }
 
-module.exports = { decide };
+const SHORTFALL_SYSTEM_PROMPT = `You are a purchasing decision agent handling a supplier fulfillment shortfall.
+A purchase order was already placed, but the supplier can only deliver part of it.
+
+Decide one of: source_elsewhere, alternate_supplier, raise_additional_po, rely_on_inventory, escalate.
+- source_elsewhere: place a new PO with a different, non-obvious supplier for the shortfall (or part of it).
+- alternate_supplier: place a new PO specifically with the best available alternate supplier from the evidence.
+- raise_additional_po: place a new PO with the SAME original supplier for the remaining shortfall quantity.
+- rely_on_inventory: no new PO needed — existing inventory plus what was actually confirmed already covers demand.
+- escalate: evidence is insufficient or the situation needs human judgment (e.g. no viable alternate supplier, or shortfall too large).
+
+Respond ONLY with valid JSON, no markdown fences, no preamble, matching exactly this shape:
+{
+  "decision": "source_elsewhere" | "alternate_supplier" | "raise_additional_po" | "rely_on_inventory" | "escalate",
+  "additional_quantity": number | null,
+  "chosen_supplier_id": string | null,
+  "confidence": number (0 to 1),
+  "reasons": string[],
+  "evidence_used": string[],
+  "missingInformation": string[]
+}`;
+
+async function decideShortfall(evidence) {
+  const llm = getLLM();
+
+  const userPrompt = `Evidence:\n${JSON.stringify(evidence, null, 2)}\n\nMake your decision.`;
+
+  const response = await llm.invoke([
+    { role: 'system', content: SHORTFALL_SYSTEM_PROMPT },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  let parsed;
+  try {
+    const cleaned = response.content.replace(/```json|```/g, '').trim();
+    parsed = JSON.parse(cleaned);
+  } catch (err) {
+    return {
+      decision: 'escalate',
+      additional_quantity: null,
+      chosen_supplier_id: null,
+      confidence: 0,
+      reasons: ['LLM response was not valid JSON'],
+      evidence_used: [],
+      missingInformation: ['Valid structured decision from LLM'],
+      raw: response.content,
+    };
+  }
+
+  return applyShortfallGuardrails(parsed, evidence);
+}
+
+/**
+ * Deterministic guardrails for the shortfall decision — same philosophy as
+ * applyGuardrails: never trust the LLM's supplier choice or quantity blindly.
+ */
+function applyShortfallGuardrails(decision, evidence) {
+  if (['source_elsewhere', 'alternate_supplier', 'raise_additional_po'].includes(decision.decision)) {
+    const qty = decision.additional_quantity ?? evidence.shortfallQty;
+
+    const supplierId = decision.chosen_supplier_id
+      || (decision.decision === 'raise_additional_po' ? evidence.originalSupplier?._id : evidence.bestAlternate?._id);
+
+    const supplier = [evidence.originalSupplier, ...evidence.alternateSuppliers]
+      .filter(Boolean)
+      .find(s => String(s._id) === String(supplierId));
+
+    if (!supplier) {
+      return {
+        ...decision,
+        decision: 'escalate',
+        reasons: [...(decision.reasons || []), 'Guardrail: no valid supplier could be resolved for this decision'],
+        missingInformation: [...(decision.missingInformation || []), 'A valid supplier to fulfil the shortfall'],
+      };
+    }
+
+    if (qty < supplier.minimumOrderQty) {
+      return {
+        ...decision,
+        decision: 'escalate',
+        reasons: [...(decision.reasons || []), `Guardrail: quantity ${qty} is below supplier MOQ ${supplier.minimumOrderQty}`],
+        missingInformation: [...(decision.missingInformation || []), 'Quantity respecting supplier MOQ'],
+      };
+    }
+
+    const estimatedCost = qty * evidence.estimatedCostPerUnit;
+    if (estimatedCost > evidence.budget.remainingBudget) {
+      return {
+        ...decision,
+        decision: 'escalate',
+        reasons: [...(decision.reasons || []), `Guardrail: estimated cost ${estimatedCost} exceeds remaining budget ${evidence.budget.remainingBudget}`],
+        missingInformation: [...(decision.missingInformation || []), 'Budget approval or reduced quantity'],
+      };
+    }
+
+    const estimatedStorage = qty * evidence.estimatedStoragePerUnit;
+    if (estimatedStorage > evidence.storage.remainingStorage) {
+      return {
+        ...decision,
+        decision: 'escalate',
+        reasons: [...(decision.reasons || []), `Guardrail: estimated storage ${estimatedStorage} exceeds remaining capacity ${evidence.storage.remainingStorage}`],
+        missingInformation: [...(decision.missingInformation || []), 'Storage capacity or reduced quantity'],
+      };
+    }
+  }
+
+  return decision;
+}
+
+module.exports = { decide, decideShortfall };

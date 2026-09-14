@@ -72,4 +72,47 @@ function simulateSupplierShortfall(po, fulfilledQty) {
   };
 }
 
-module.exports = { validate, simulateSupplierShortfall };
+async function validateShortfall(actionResult, evidence) {
+  if (actionResult.status === 'no_action_relying_on_inventory') {
+    return { valid: true, reason: 'Relying on existing inventory; nothing to validate.', requiresRetry: false };
+  }
+
+  if (actionResult.status === 'pending_human_approval') {
+    return {
+      valid: null,
+      reason: 'Action is awaiting human approval; validation deferred until executed.',
+      requiresRetry: false,
+      pending: true,
+    };
+  }
+
+  // executed -> a new PO was created to cover the shortfall
+  const [budgetRes, storageRes] = await Promise.all([
+    axios.get(`${BASE_URL}/api/budget`),
+    axios.get(`${BASE_URL}/api/storage`),
+  ]);
+  const budget = budgetRes.data;
+  const storage = storageRes.data;
+
+  const po = actionResult.actionTaken.po;
+  const actualCost = po.quantityOrdered * evidence.estimatedCostPerUnit;
+  const wouldExceedBudget = (budget.spentSoFar + actualCost) > budget.totalBudget;
+
+  const storageNeeded = po.quantityOrdered * evidence.estimatedStoragePerUnit;
+  const remainingStorageAfter = storage.totalCapacity - storage.usedCapacity;
+  const wouldExceedStorage = storageNeeded > remainingStorageAfter;
+
+  if (wouldExceedBudget || wouldExceedStorage) {
+    return {
+      valid: false,
+      reason: wouldExceedBudget
+        ? `Post-action check failed: actual cost ${actualCost} would exceed remaining budget.`
+        : `Post-action check failed: required storage ${storageNeeded} exceeds remaining capacity ${remainingStorageAfter}.`,
+      requiresRetry: true,
+    };
+  }
+
+  return { valid: true, reason: 'Post-action state confirmed within budget and storage constraints.', requiresRetry: false };
+}
+
+module.exports = { validate, simulateSupplierShortfall, validateShortfall };
