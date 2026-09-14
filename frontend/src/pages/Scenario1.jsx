@@ -155,10 +155,22 @@ export default function Scenario1() {
     } catch (err) {
       console.error(err);
 
-      setError(
-        err.response?.data?.error ||
-          "Unable to run the purchase recommendation agent."
-      );
+      const backendMessage = err.response?.data?.error || "";
+
+      if (
+        err.response?.status === 429 ||
+        backendMessage.toLowerCase().includes("quota") ||
+        backendMessage.toLowerCase().includes("too many requests") ||
+        backendMessage.toLowerCase().includes("generativeai")
+      ) {
+        setError(
+          "AI service is temporarily unavailable. Please try again shortly."
+        );
+      } else {
+        setError(
+          "Unable to run the purchase recommendation agent. Please try again."
+        );
+      }
     } finally {
       setRunning(false);
     }
@@ -316,86 +328,6 @@ export default function Scenario1() {
                 {error}
               </div>
             )}
-          </section>
-
-          {/* Pipeline */}
-          <section className="scenario-card">
-            <div className="scenario-card-header">
-              <div>
-                <div className="scenario-card-eyebrow">
-                  AGENT EXECUTION
-                </div>
-
-                <h2>Decision pipeline</h2>
-
-                <p>
-                  Every decision passes through evidence, reasoning,
-                  controlled action, and validation.
-                </p>
-              </div>
-            </div>
-
-            <div className="scenario-pipeline">
-              <PipelineStep
-                number={1}
-                title="Investigate"
-                subtitle="Gather evidence"
-                status={result ? "complete" : "active"}
-                icon={Database}
-              />
-
-              <div className="scenario-pipeline-line" />
-
-              <PipelineStep
-                number={2}
-                title="Decide"
-                subtitle="Reason over facts"
-                status={result ? "complete" : ""}
-                icon={Brain}
-              />
-
-              <div className="scenario-pipeline-line" />
-
-              <PipelineStep
-                number={3}
-                title="Act"
-                subtitle={
-                  result
-                    ? result.actionResult?.status ===
-                      "pending_human_approval"
-                      ? "Approval required"
-                      : "Execute safely"
-                    : "Execute safely"
-                }
-                status={
-                  result
-                    ? result.actionResult?.status ===
-                      "pending_human_approval"
-                      ? "active"
-                      : "complete"
-                    : ""
-                }
-                icon={Zap}
-              />
-
-              <div className="scenario-pipeline-line" />
-
-              <PipelineStep
-                number={4}
-                title="Validate"
-                subtitle={
-                  result?.validationResult?.pending
-                    ? "Waiting for action"
-                    : "Verify outcome"
-                }
-                status={
-                  result?.validationResult?.valid
-                    ? "complete"
-                    : ""
-                }
-                icon={ShieldCheck}
-              />
-            </div>
           </section>
 
           {/* Evidence */}
@@ -582,6 +514,111 @@ export default function Scenario1() {
             )}
           </section>
 
+          {result?.demoMode && (
+            <div
+              className="scenario-status-card"
+              style={{
+                marginTop: "15px",
+                borderColor: "#fde68a",
+                background: "#fffbeb",
+              }}
+            >
+              <div className="scenario-status-row">
+                <span className="scenario-status-label">
+                  Decision source
+                </span>
+                <span
+                  className="scenario-status-value"
+                  style={{ color: "#92400e" }}
+                >
+                  Demo fallback
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Pipeline */}
+          <section className="scenario-card">
+            <div className="scenario-card-header">
+              <div>
+                <div className="scenario-card-eyebrow">
+                  AGENT EXECUTION
+                </div>
+
+                <h2>Decision pipeline</h2>
+
+                <p>
+                  Every decision passes through evidence, reasoning,
+                  controlled action, and validation.
+                </p>
+              </div>
+            </div>
+
+            <div className="scenario-pipeline">
+              <PipelineStep
+                number={1}
+                title="Investigate"
+                subtitle="Gather evidence"
+                status={result ? "complete" : "active"}
+                icon={Database}
+              />
+
+              <div className="scenario-pipeline-line" />
+
+              <PipelineStep
+                number={2}
+                title="Decide"
+                subtitle="Reason over facts"
+                status={result ? "complete" : ""}
+                icon={Brain}
+              />
+
+              <div className="scenario-pipeline-line" />
+
+              <PipelineStep
+                number={3}
+                title="Act"
+                subtitle={
+                  result
+                    ? result.actionResult?.status ===
+                      "pending_human_approval"
+                      ? "Approval required"
+                      : "Execute safely"
+                    : "Execute safely"
+                }
+                status={
+                  result
+                    ? result.actionResult?.status ===
+                      "pending_human_approval"
+                      ? "active"
+                      : "complete"
+                    : ""
+                }
+                icon={Zap}
+              />
+
+              <div className="scenario-pipeline-line" />
+
+              <PipelineStep
+                number={4}
+                title="Validate"
+                subtitle={
+                  result?.validationResult?.pending
+                    ? "Waiting for action"
+                    : "Verify outcome"
+                }
+                status={
+                  result?.validationResult?.valid ||
+                  result?.finalStatus === "completed"
+                    ? "complete"
+                    : ""
+                }
+                icon={ShieldCheck}
+              />
+            </div>
+          </section>
+
+
           {/* Approval */}
           {result?.actionResult?.needsApproval &&
             result?.finalStatus === "awaiting_approval" && (
@@ -691,15 +728,30 @@ export default function Scenario1() {
                 className={
                   result?.finalStatus === "awaiting_approval"
                     ? "status-pending"
-                    : result
+                    : result?.finalStatus === "rejected"
+                    ? "status-error"
+                    : result?.finalStatus === "completed"
                     ? "status-success"
                     : ""
                 }
+                style={{
+                  color:
+                    result?.finalStatus === "completed"
+                      ? "#15803d"
+                      : result?.finalStatus === "rejected"
+                      ? "#b91c1c"
+                      : result?.finalStatus === "awaiting_approval"
+                      ? "#b45309"
+                      : undefined,
+                }}
               >
                 {result
-                  ? result.finalStatus ===
-                    "awaiting_approval"
+                  ? result.finalStatus === "awaiting_approval"
                     ? "Awaiting approval"
+                    : result.finalStatus === "completed"
+                    ? "Completed"
+                    : result.finalStatus === "rejected"
+                    ? "Rejected"
                     : result.finalStatus
                   : "Not started"}
               </strong>
