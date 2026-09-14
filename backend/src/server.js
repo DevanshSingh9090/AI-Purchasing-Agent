@@ -9,6 +9,7 @@ const posRoutes = require('./routes/pos');
 const suppliersRoutes = require('./routes/suppliers');
 const budgetRoutes = require('./routes/budget');
 const storageRoutes = require('./routes/storage');
+const productsRoutes = require('./routes/products');
 
 const app = express();
 app.use(cors());
@@ -22,6 +23,7 @@ app.use('/api/pos', posRoutes);
 app.use('/api/suppliers', suppliersRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/storage', storageRoutes);
+app.use('/api/products', productsRoutes);
 
 const PORT = process.env.PORT || 4000;
 

@@ -15,7 +15,7 @@ const decisionLogSchema = new mongoose.Schema({
   actionTaken: { type: mongoose.Schema.Types.Mixed },
   validationResult: { type: mongoose.Schema.Types.Mixed },
   retries: { type: Number, default: 0 },
-  finalStatus: { type: String, enum: ['completed', 'escalated', 'failed'] },
+  finalStatus: { type: String, enum: ['completed', 'escalated', 'failed', 'awaiting_approval'] },
 }, { timestamps: true });
 
 module.exports = mongoose.model('DecisionLog', decisionLogSchema);
