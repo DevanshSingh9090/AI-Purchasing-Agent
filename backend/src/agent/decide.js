@@ -209,4 +209,4 @@ function applyShortfallGuardrails(decision, evidence) {
   return decision;
 }
 
-module.exports = { decide, decideShortfall };
+module.exports = { decide, decideShortfall, applyGuardrails, applyShortfallGuardrails };

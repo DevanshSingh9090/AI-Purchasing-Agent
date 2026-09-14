@@ -114,4 +114,4 @@ async function actOnShortfall(decision, evidence) {
   return { actionTaken: { type: 'create_po', po: poRes.data }, status: 'executed', needsApproval: false };
 }
 
-module.exports = { act, requiresHumanApproval, actOnShortfall, requiresShortfallApproval };
+module.exports = { act, requiresHumanApproval, actOnShortfall, requiresShortfallApproval, LOW_CONFIDENCE_THRESHOLD };
