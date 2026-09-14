@@ -39,6 +39,7 @@ export default function Scenario2() {
   const [fulfilledQty, setFulfilledQty] = useState("");
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
@@ -90,6 +91,47 @@ export default function Scenario2() {
           ? po.confirmedQuantity
           : 0
       );
+    }
+  };
+
+  const handleApproval = async (approved) => {
+    if (!result?.logId) return;
+
+    try {
+      setApprovalLoading(true);
+      setError("");
+
+      const endpoint = approved
+        ? `/agent/approve/${result.logId}`
+        : `/agent/reject/${result.logId}`;
+
+      const response = await api.post(endpoint);
+
+      setResult((prev) => ({
+        ...prev,
+        ...response.data,
+        approvalStatus: response.data.approvalStatus,
+        finalStatus: response.data.finalStatus,
+        actionResult: approved
+          ? {
+              status: "executed",
+              needsApproval: false,
+              actionTaken: response.data.actionTaken,
+            }
+          : prev.actionResult,
+        validationResult:
+          response.data.validationResult ||
+          prev.validationResult,
+      }));
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.response?.data?.error ||
+          "Unable to process approval."
+      );
+    } finally {
+      setApprovalLoading(false);
     }
   };
 
@@ -423,18 +465,122 @@ export default function Scenario2() {
                     </div>
 
                     {result.actionResult && (
-                      <div className="scenario-approval-card">
-                        <div className="scenario-approval-title">
-                          <AlertTriangle size={17} />
+                      <>
+                        {result.finalStatus === "awaiting_approval" ? (
+                          <div className="scenario-approval-card">
+                            <div className="scenario-approval-title">
+                              <AlertTriangle size={17} />
+                              Human approval required
+                            </div>
 
-                          Action status
-                        </div>
+                            <p>
+                              The agent wants to take the following
+                              purchasing action. Approval is required
+                              before execution.
+                            </p>
 
-                        <p>
-                          {result.actionResult.status ||
-                            "Action processed by agent."}
-                        </p>
-                      </div>
+                            {result.actionResult.actionTaken && (
+                              <div
+                                style={{
+                                  marginTop: "14px",
+                                  padding: "12px",
+                                  background: "white",
+                                  borderRadius: "10px",
+                                  border: "1px solid #fde68a",
+                                }}
+                              >
+                                <strong style={{ fontSize: "13px" }}>
+                                  Proposed action
+                                </strong>
+
+                                <div
+                                  style={{
+                                    marginTop: "6px",
+                                    fontSize: "13px",
+                                    color: "#6b7280",
+                                  }}
+                                >
+                                  Create PO for{" "}
+                                  <strong>
+                                    {
+                                      result.actionResult.actionTaken
+                                        .quantity
+                                    }
+                                  </strong>{" "}
+                                  additional units.
+                                </div>
+                              </div>
+                            )}
+
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "10px",
+                                marginTop: "15px",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleApproval(false)}
+                                disabled={approvalLoading}
+                                style={{
+                                  flex: 1,
+                                  height: "42px",
+                                  borderRadius: "9px",
+                                  border: "1px solid #fecaca",
+                                  background: "#fff",
+                                  color: "#b91c1c",
+                                  fontWeight: 700,
+                                  cursor: approvalLoading
+                                    ? "not-allowed"
+                                    : "pointer",
+                                }}
+                              >
+                                Reject
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleApproval(true)}
+                                disabled={approvalLoading}
+                                style={{
+                                  flex: 1,
+                                  height: "42px",
+                                  borderRadius: "9px",
+                                  border: "none",
+                                  background: "#111827",
+                                  color: "#fff",
+                                  fontWeight: 700,
+                                  cursor: approvalLoading
+                                    ? "not-allowed"
+                                    : "pointer",
+                                }}
+                              >
+                                {approvalLoading
+                                  ? "Processing..."
+                                  : "Approve purchase"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="scenario-status-card">
+                            <div className="scenario-status-row">
+                              <span className="scenario-status-label">
+                                Action status
+                              </span>
+
+                              <span className="scenario-status-value">
+                                {result.finalStatus === "completed"
+                                  ? "✓ Executed"
+                                  : result.finalStatus === "rejected"
+                                  ? "Rejected"
+                                  : result.actionResult.status ||
+                                    "Processed"}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {result.validationResult && (
@@ -444,12 +590,36 @@ export default function Scenario2() {
                             Validation
                           </span>
 
-                          <span className="scenario-status-value">
-                            <span className="scenario-status-dot" />
+                          <span
+                            className="scenario-status-value"
+                            style={{
+                              color:
+                                result.finalStatus === "completed"
+                                  ? "#15803d"
+                                  : result.finalStatus === "rejected"
+                                  ? "#b91c1c"
+                                  : "#b45309",
+                            }}
+                          >
+                            <span
+                              className="scenario-status-dot"
+                              style={{
+                                background:
+                                  result.finalStatus === "completed"
+                                    ? "#22c55e"
+                                    : result.finalStatus === "rejected"
+                                    ? "#ef4444"
+                                    : "#f59e0b",
+                              }}
+                            />
 
-                            {result.validationResult.pending
+                            {result.finalStatus === "awaiting_approval"
                               ? "Pending approval"
-                              : "Validated"}
+                              : result.finalStatus === "completed"
+                              ? "Validated"
+                              : result.finalStatus === "rejected"
+                              ? "Rejected"
+                              : "Failed"}
                           </span>
                         </div>
                       </div>

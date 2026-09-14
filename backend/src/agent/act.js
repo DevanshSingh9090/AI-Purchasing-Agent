@@ -3,16 +3,27 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
 
 const LOW_CONFIDENCE_THRESHOLD = parseFloat(process.env.LOW_CONFIDENCE_THRESHOLD || '0.6');
 
+function normalizeDecision(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
 function requiresHumanApproval(decision) {
-  if (decision.decision === 'modify' || decision.decision === 'reject') return true;
-  if (decision.confidence < LOW_CONFIDENCE_THRESHOLD) return true;
+  const action = normalizeDecision(decision.decision);
+
+  // Any modification or rejection must always be reviewed by a human.
+  if (action === 'modify' || action === 'reject') return true;
+
+  // Low-confidence decisions also require review.
+  if (Number(decision.confidence) < LOW_CONFIDENCE_THRESHOLD) return true;
+
   return false;
 }
 
 async function act(decision, evidence) {
+  const action = normalizeDecision(decision.decision);
   const needsApproval = requiresHumanApproval(decision);
 
-  if (decision.decision === 'investigate') {
+  if (action === 'investigate') {
     return {
       actionTaken: null,
       status: 'no_action_needed_investigate',
@@ -20,7 +31,7 @@ async function act(decision, evidence) {
     };
   }
 
-  if (decision.decision === 'reject') {
+  if (action === 'reject') {
     return {
       actionTaken: null,
       status: needsApproval ? 'pending_human_approval' : 'rejected_no_action',
@@ -28,7 +39,10 @@ async function act(decision, evidence) {
     };
   }
 
-  const quantity = decision.decision === 'modify' ? decision.modified_quantity : evidence.recommendedQty;
+  const quantity =
+    action === 'modify'
+      ? Number(decision.modified_quantity)
+      : Number(evidence.recommendedQty);
 
   if (needsApproval) {
     return {
@@ -63,21 +77,26 @@ async function act(decision, evidence) {
 }
 
 function requiresShortfallApproval(decision) {
-  if (decision.decision === 'escalate') return true;
-  if (decision.confidence < LOW_CONFIDENCE_THRESHOLD) return true;
-  // Switching suppliers is a bigger deal than routine reordering — always human-approved
-  if (decision.decision === 'alternate_supplier' || decision.decision === 'source_elsewhere') return true;
+  const action = normalizeDecision(decision.decision);
+
+  if (action === 'escalate') return true;
+  if (Number(decision.confidence) < LOW_CONFIDENCE_THRESHOLD) return true;
+
+  // Switching suppliers is always human-approved.
+  if (action === 'alternate_supplier' || action === 'source_elsewhere') return true;
+
   return false;
 }
 
 async function actOnShortfall(decision, evidence) {
+  const action = normalizeDecision(decision.decision);
   const needsApproval = requiresShortfallApproval(decision);
 
-  if (decision.decision === 'escalate') {
+  if (action === 'escalate') {
     return { actionTaken: null, status: 'pending_human_approval', needsApproval: true };
   }
 
-  if (decision.decision === 'rely_on_inventory') {
+  if (action === 'rely_on_inventory') {
     return {
       actionTaken: null,
       status: needsApproval ? 'pending_human_approval' : 'no_action_relying_on_inventory',
@@ -87,7 +106,9 @@ async function actOnShortfall(decision, evidence) {
 
   // source_elsewhere / alternate_supplier / raise_additional_po -> propose or create a new PO
   const supplierId = decision.chosen_supplier_id
-    || (decision.decision === 'raise_additional_po' ? evidence.originalSupplier?._id : evidence.bestAlternate?._id);
+    || (action === 'raise_additional_po'
+      ? evidence.originalSupplier?._id
+      : evidence.bestAlternate?._id);
   const quantity = decision.additional_quantity ?? evidence.shortfallQty;
 
   if (needsApproval) {
@@ -114,4 +135,11 @@ async function actOnShortfall(decision, evidence) {
   return { actionTaken: { type: 'create_po', po: poRes.data }, status: 'executed', needsApproval: false };
 }
 
-module.exports = { act, requiresHumanApproval, actOnShortfall, requiresShortfallApproval, LOW_CONFIDENCE_THRESHOLD };
+module.exports = {
+  act,
+  requiresHumanApproval,
+  actOnShortfall,
+  requiresShortfallApproval,
+  normalizeDecision,
+  LOW_CONFIDENCE_THRESHOLD,
+};

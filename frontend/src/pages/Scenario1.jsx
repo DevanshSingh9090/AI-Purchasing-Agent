@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
+  AlertTriangle,
   Brain,
   Check,
   ChevronDown,
@@ -57,12 +58,55 @@ export default function Scenario1() {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [recommendedQty, setRecommendedQty] = useState(800);
+  const [approvalLoading, setApprovalLoading] = useState(false);
 
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [running, setRunning] = useState(false);
 
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+
+  const handleApproval = async (approved) => {
+    if (!result?.logId) return;
+
+    try {
+      setApprovalLoading(true);
+      setError("");
+
+      const endpoint = approved
+        ? `/agent/approve/${result.logId}`
+        : `/agent/reject/${result.logId}`;
+
+      const response = await api.post(endpoint);
+
+      setResult((prev) => ({
+        ...prev,
+        ...response.data,
+        approvalStatus: response.data.approvalStatus,
+        finalStatus: response.data.finalStatus,
+        actionResult: approved
+          ? {
+              status: "executed",
+              needsApproval: false,
+              actionTaken:
+                response.data.actionTaken,
+            }
+          : prev.actionResult,
+        validationResult:
+          response.data.validationResult ||
+          prev.validationResult,
+      }));
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.response?.data?.error ||
+          "Unable to process approval."
+      );
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
 
   // Load products
   useEffect(() => {
@@ -539,24 +583,100 @@ export default function Scenario1() {
           </section>
 
           {/* Approval */}
-          {result?.actionResult?.needsApproval && (
-            <section className="scenario-approval-card">
-              <div className="scenario-approval-icon">
-                <ShieldCheck size={20} />
-              </div>
-
-              <div>
+          {result?.actionResult?.needsApproval &&
+            result?.finalStatus === "awaiting_approval" && (
+              <section className="scenario-approval-card">
                 <div className="scenario-approval-title">
+                  <AlertTriangle size={17} />
                   Human approval required
                 </div>
 
                 <p>
-                  The agent has proposed a modification but will not
-                  execute it without approval.
+                  The agent has proposed a purchase action.
+                  Review the recommendation before execution.
                 </p>
-              </div>
-            </section>
-          )}
+
+                {result?.actionResult?.actionTaken && (
+                  <div
+                    style={{
+                      marginTop: "14px",
+                      padding: "12px",
+                      background: "white",
+                      borderRadius: "10px",
+                      border: "1px solid #fde68a",
+                    }}
+                  >
+                    <strong style={{ fontSize: "13px" }}>
+                      Proposed action
+                    </strong>
+
+                    <div
+                      style={{
+                        marginTop: "6px",
+                        fontSize: "13px",
+                        color: "#6b7280",
+                      }}
+                    >
+                      Create purchase order for{" "}
+                      <strong>
+                        {result.actionResult.actionTaken.quantity}
+                      </strong>{" "}
+                      units.
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    marginTop: "15px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleApproval(false)}
+                    disabled={approvalLoading}
+                    style={{
+                      flex: 1,
+                      height: "42px",
+                      borderRadius: "9px",
+                      border: "1px solid #fecaca",
+                      background: "#fff",
+                      color: "#b91c1c",
+                      fontWeight: 700,
+                      cursor: approvalLoading
+                        ? "not-allowed"
+                        : "pointer",
+                    }}
+                  >
+                    Reject
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleApproval(true)}
+                    disabled={approvalLoading}
+                    style={{
+                      flex: 1,
+                      height: "42px",
+                      borderRadius: "9px",
+                      border: "none",
+                      background: "#111827",
+                      color: "#fff",
+                      fontWeight: 700,
+                      cursor: approvalLoading
+                        ? "not-allowed"
+                        : "pointer",
+                    }}
+                  >
+                    {approvalLoading
+                      ? "Processing..."
+                      : "Approve purchase"}
+                  </button>
+                </div>
+              </section>
+            )}
 
           {/* Status */}
           <section className="scenario-card scenario-status-card">
